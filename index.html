@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Campus DB - Student Directory</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f5ef;color:#252923;font:15px Arial,sans-serif}.app{max-width:850px;margin:55px auto;padding:30px}
+header{display:flex;justify-content:space-between;align-items:center}h1{font-size:32px;margin:0}p{color:#777}
+form{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:9px;margin:28px 0 15px}
+input,button{padding:12px;border:1px solid #ddd;border-radius:6px;font:inherit}input{min-width:0}button{background:#344332;color:white;border:0;cursor:pointer}
+button:hover{background:#52644f}ul{list-style:none;padding:0;margin:16px 0}
+li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px;background:white;border-bottom:1px solid #eee}
+small{display:block;color:#777;margin-top:5px}.actions{display:flex;gap:7px}.actions button{padding:8px}
+@media(max-width:680px){.app{margin:20px auto;padding:20px}form{grid-template-columns:1fr 1fr}form button{grid-column:span 2}header{align-items:flex-start}}
+</style></head><body>
+<main class="app"><header><h1>Student directory</h1><b><output id="count">0</output> students</b></header>
+<p>Keep your campus community organized.</p>
+<form id="form"><input name="name" placeholder="Full name" aria-label="Full name" required><input name="email" type="email" placeholder="Email" aria-label="Email" required><input name="course" placeholder="Course" aria-label="Course" required><input name="year" type="number" min="1" max="8" placeholder="Year" aria-label="Year" required><button id="save">Add student</button></form>
+<input id="search" placeholder="Search students..." aria-label="Search students"><ul id="students"></ul></main><script>
+const form=document.querySelector('#form'),list=document.querySelector('#students'),search=document.querySelector('#search'),save=document.querySelector('#save'),count=document.querySelector('#count');
+let students=JSON.parse(localStorage.getItem('campus.students')||'[]'),editing=-1;
+const safe=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const render=()=>{count.textContent=students.length;list.innerHTML=students.map((s,i)=>({s,i})).filter(({s})=>Object.values(s).some(v=>String(v).toLowerCase().includes(search.value.toLowerCase()))).map(({s,i})=>`<li><div><b>${safe(s.name)}</b><small>${safe(s.email)} · ${safe(s.course)} · Year ${safe(s.year)}</small></div><div class="actions"><button type="button" data-edit="${i}">Edit</button><button type="button" data-del="${i}">Delete</button></div></li>`).join('')||`<li>${search.value?'No matches found.':'No student records yet.'}</li>`};
+const persist=()=>{localStorage.setItem('campus.students',JSON.stringify(students));render()};
+form.onsubmit=e=>{e.preventDefault();const s=Object.fromEntries(new FormData(form));editing<0?students.push(s):students.splice(editing,1,s);editing=-1;save.textContent='Add student';form.reset();persist()};
+list.onclick=e=>{const i=e.target.dataset.edit??e.target.dataset.del;if(i===undefined)return;if(e.target.dataset.edit!==undefined){Object.entries(students[i]).forEach(([k,v])=>form.elements[k].value=v);editing=+i;save.textContent='Update student'}else{students.splice(i,1);if(editing===+i){editing=-1;form.reset();save.textContent='Add student'}else if(+i<editing)editing--;persist()}};
+search.oninput=render;render();</script></body></html>
